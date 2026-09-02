@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-01.73.43db37f"
+    "version" : "2026-09-01.76.a590c4f"
   },
   "servers" : [ {
     "url" : "https://prisoner-finance-holds-api-dev.hmpps.service.justice.gov.uk",
@@ -78,6 +78,16 @@
           },
           "403" : {
             "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Conflict - Legacy Hold Number already exists",
             "content" : {
               "application/json" : {
                 "schema" : {
