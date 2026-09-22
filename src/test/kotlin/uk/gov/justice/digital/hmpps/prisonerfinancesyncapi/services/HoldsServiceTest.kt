@@ -60,6 +60,36 @@ class HoldsServiceTest {
     val prisonSubaccountUUID = UUID.randomUUID()
     val prisonerSubaccountUUID = UUID.randomUUID()
 
+    fun mockAccountResolver(
+      syncCreateHoldRequest: SyncCreateHoldRequest,
+      prisonSubaccountUUID: UUID,
+      prisonerSubaccountUUID: UUID,
+    ) {
+      whenever(
+        accountResolver.resolveSubAccount(
+          prisonId = eq(syncCreateHoldRequest.holdLocation),
+          offenderId = eq(""),
+          accountCode = eq(2199),
+          transactionType = eq(syncCreateHoldRequest.holdType),
+          parentCache = any(),
+        ),
+      ).thenReturn(
+        prisonSubaccountUUID,
+      )
+
+      whenever(
+        accountResolver.resolveSubAccount(
+          prisonId = eq(""),
+          offenderId = eq(syncCreateHoldRequest.prisonNumber),
+          accountCode = eq(syncCreateHoldRequest.subAccountCode),
+          transactionType = eq(syncCreateHoldRequest.holdType),
+          parentCache = any(),
+        ),
+      ).thenReturn(
+        prisonerSubaccountUUID,
+      )
+    }
+
     @Test
     fun `should send the hold request to the hold service, store the mapping and return the created hold`() {
       val holdsCreatedAt = LocalDateTime.now()
@@ -78,7 +108,7 @@ class HoldsServiceTest {
         holdType = "WHF",
         holdLocation = "LEI",
         amount = BigDecimal("99.99"),
-        holdTransactionId = 12345
+        holdTransactionId = 12345,
       )
 
       val holdsCreatedAtUTC = timeConversionService.toUtcInstant(holdsCreatedAt)
@@ -98,7 +128,7 @@ class HoldsServiceTest {
         holdLocation = "LEI",
         amount = BigDecimal("99.99").toPence(),
         prisonerSubAccountId = prisonerSubaccountUUID,
-        prisonSubAccountId = prisonSubaccountUUID
+        prisonSubAccountId = prisonSubaccountUUID,
       )
 
       val createHoldResponseId = UUID.randomUUID()
@@ -124,10 +154,15 @@ class HoldsServiceTest {
         holdUuid = createHoldResponseId,
       )
 
-      whenever(holdsApiClient.postHold(
-        request = eq(createHoldRequest),
-        idempotencyKey = any()
-      )).thenReturn(createHoldResponse)
+      mockAccountResolver(syncCreateHoldRequest, prisonSubaccountUUID, prisonerSubaccountUUID)
+
+      whenever(
+        holdsApiClient.postHold(
+          request = eq(createHoldRequest),
+          idempotencyKey = any(),
+        ),
+      ).thenReturn(createHoldResponse)
+
       whenever(
         holdsMappingRepository.save(
           HoldsMapping(legacyHoldNumber = syncCreateHoldRequest.holdNumber, holdsUuid = createHoldResponseId),
@@ -161,7 +196,7 @@ class HoldsServiceTest {
         holdType = "WHF",
         holdLocation = "LEI",
         amount = BigDecimal("99.99"),
-        holdTransactionId = 12345
+        holdTransactionId = 12345,
       )
 
       val holdsCreatedAtUTC = timeConversionService.toUtcInstant(holdsCreatedAt)
@@ -181,7 +216,7 @@ class HoldsServiceTest {
         holdLocation = "LEI",
         amount = BigDecimal("99.99").toPence(),
         prisonerSubAccountId = prisonerSubaccountUUID,
-        prisonSubAccountId = prisonSubaccountUUID
+        prisonSubAccountId = prisonSubaccountUUID,
       )
 
       val createHoldResponse = HoldResponse(
@@ -202,10 +237,14 @@ class HoldsServiceTest {
 
       val responseBytes = createHoldResponse.id.toString().toByteArray(StandardCharsets.UTF_8)
 
-      whenever(holdsApiClient.postHold(
-        request = eq(createHoldRequest),
-        idempotencyKey = any()
-      )).thenThrow(
+      mockAccountResolver(syncCreateHoldRequest, prisonSubaccountUUID, prisonerSubaccountUUID)
+
+      whenever(
+        holdsApiClient.postHold(
+          request = eq(createHoldRequest),
+          idempotencyKey = any(),
+        ),
+      ).thenThrow(
         WebClientResponseException(
           409,
           "Conflict",
@@ -213,16 +252,6 @@ class HoldsServiceTest {
           responseBytes,
           StandardCharsets.UTF_8,
         ),
-      )
-
-      whenever(
-        accountResolver.resolveSubAccount(
-          prisonId = eq("LEI"),
-          offenderId = "",
-          accountCode = ,
-          transactionType = TODO(),
-          parentCache = TODO()
-        )
       )
 
       assertThatThrownBy { holdsService.createHold(syncCreateHoldRequest) }

@@ -114,6 +114,6 @@ data class SyncCreateHoldRequest(
     nullable = true,
     required = false,
   )
-  val releaseTransactionId: Long? = null
+  val releaseTransactionId: Long? = null,
 
 )

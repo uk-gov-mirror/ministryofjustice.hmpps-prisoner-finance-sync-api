@@ -67,7 +67,7 @@ class HoldsIntegrationTest(@Autowired private val holdsMappingRepository: HoldsM
         holdType = "WHF",
         holdLocation = "LEI",
         amount = BigDecimal("99.99"),
-        holdTransactionId = 12345
+        holdTransactionId = 12345,
       )
 
       val expectedHoldRequest = CreateHoldRequest(
@@ -84,7 +84,7 @@ class HoldsIntegrationTest(@Autowired private val holdsMappingRepository: HoldsM
         holdLocation = "LEI",
         amount = syncHoldRequest.amount.toPence(),
         prisonSubAccountId = prisonSubaccountUUID,
-        prisonerSubAccountId = prisonerSubaccountUUID
+        prisonerSubAccountId = prisonerSubaccountUUID,
       )
 
       holdsApi.stubPostHold(expectedHoldRequest)
@@ -115,7 +115,7 @@ class HoldsIntegrationTest(@Autowired private val holdsMappingRepository: HoldsM
         holdType = "WHF",
         holdLocation = "LEI",
         amount = BigDecimal("99.99"),
-        holdTransactionId = 12345
+        holdTransactionId = 12345,
       )
 
       webTestClient
@@ -145,7 +145,7 @@ class HoldsIntegrationTest(@Autowired private val holdsMappingRepository: HoldsM
         holdType = "HOA",
         holdLocation = "LEI",
         amount = BigDecimal("20"),
-        holdTransactionId = 12345
+        holdTransactionId = 12345,
       )
 
       val expectedHoldRequest = CreateHoldRequest(
@@ -162,7 +162,7 @@ class HoldsIntegrationTest(@Autowired private val holdsMappingRepository: HoldsM
         holdLocation = syncHoldRequest.holdLocation,
         amount = syncHoldRequest.amount.toPence(),
         prisonSubAccountId = prisonSubaccountUUID,
-        prisonerSubAccountId = prisonerSubaccountUUID
+        prisonerSubAccountId = prisonerSubaccountUUID,
       )
 
       holdsApi.stubPostHold(expectedHoldRequest)
