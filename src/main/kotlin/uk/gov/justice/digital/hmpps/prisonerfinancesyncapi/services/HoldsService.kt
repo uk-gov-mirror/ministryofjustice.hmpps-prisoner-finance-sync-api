@@ -15,12 +15,15 @@ import uk.gov.justice.digital.hmpps.prisonerfinancesyncapi.models.holds.SyncRele
 import uk.gov.justice.digital.hmpps.prisonerfinancesyncapi.models.holds.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfinancesyncapi.utils.toPence
 import uk.gov.justice.digital.hmpps.prisonerfinancesyncapi.utils.toPounds
+import java.util.UUID
 
 @Service
 class HoldsService(
   var timeConversionService: TimeConversionService,
   var holdsApiClient: HoldsApiClient,
   var holdsMappingRepository: HoldsMappingRepository,
+  val idempotencyService: GeneralLedgerIdempotencyService,
+  val accountResolver: GeneralLedgerAccountResolver
 ) {
 
   fun mapSubAccountCodeToSubAccountRef(code: Int): CreateHoldRequest.SubAccountRef = when (code) {
@@ -39,6 +42,10 @@ class HoldsService(
       return SyncCreateHoldResponse(mapping.legacyHoldNumber, mapping.holdsUuid)
     }
 
+
+
+
+
     val createHoldRequest = CreateHoldRequest(
       prisonNumber = syncCreateHoldRequest.prisonNumber,
       legacyHoldNumber = syncCreateHoldRequest.holdNumber,
@@ -52,9 +59,14 @@ class HoldsService(
       holdLocation = syncCreateHoldRequest.holdLocation,
       holdUntilDate = if (syncCreateHoldRequest.holdUntilDate != null) timeConversionService.toUtcInstant(syncCreateHoldRequest.holdUntilDate) else null,
       description = syncCreateHoldRequest.description,
+      prisonSubAccountId = UUID.randomUUID(),
+      prisonerSubAccountId = UUID.randomUUID()
     )
 
-    val response = holdsApiClient.postHold(createHoldRequest)
+    val idempotencyKey = idempotencyService.genTransactionIdempotencyKey(transactionId = syncCreateHoldRequest.holdTransactionId, entrySequence = 1)
+
+
+    val response = holdsApiClient.postHold(createHoldRequest, idempotencyKey = idempotencyKey)
 
     val holdsMapping = HoldsMapping(legacyHoldNumber = syncCreateHoldRequest.holdNumber, holdsUuid = response.id)
 

@@ -11,6 +11,7 @@ import org.mockito.Mock
 import org.mockito.Spy
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -45,10 +46,19 @@ class HoldsServiceTest {
     @Mock
     private lateinit var holdsMappingRepository: HoldsMappingRepository
 
+    @Spy
+    private lateinit var idempotencyService: GeneralLedgerIdempotencyService
+
+    @Mock
+    private lateinit var accountResolver: GeneralLedgerAccountResolver
+
     @InjectMocks
     private lateinit var holdsService: HoldsService
 
     val timeConversionService = TimeConversionService()
+
+    val prisonSubaccountUUID = UUID.randomUUID()
+    val prisonerSubaccountUUID = UUID.randomUUID()
 
     @Test
     fun `should send the hold request to the hold service, store the mapping and return the created hold`() {
@@ -68,6 +78,7 @@ class HoldsServiceTest {
         holdType = "WHF",
         holdLocation = "LEI",
         amount = BigDecimal("99.99"),
+        holdTransactionId = 12345
       )
 
       val holdsCreatedAtUTC = timeConversionService.toUtcInstant(holdsCreatedAt)
@@ -86,6 +97,8 @@ class HoldsServiceTest {
         holdType = CreateHoldRequest.HoldType.WHF,
         holdLocation = "LEI",
         amount = BigDecimal("99.99").toPence(),
+        prisonerSubAccountId = prisonerSubaccountUUID,
+        prisonSubAccountId = prisonSubaccountUUID
       )
 
       val createHoldResponseId = UUID.randomUUID()
@@ -111,7 +124,10 @@ class HoldsServiceTest {
         holdUuid = createHoldResponseId,
       )
 
-      whenever(holdsApiClient.postHold(createHoldRequest)).thenReturn(createHoldResponse)
+      whenever(holdsApiClient.postHold(
+        request = eq(createHoldRequest),
+        idempotencyKey = any()
+      )).thenReturn(createHoldResponse)
       whenever(
         holdsMappingRepository.save(
           HoldsMapping(legacyHoldNumber = syncCreateHoldRequest.holdNumber, holdsUuid = createHoldResponseId),
@@ -145,6 +161,7 @@ class HoldsServiceTest {
         holdType = "WHF",
         holdLocation = "LEI",
         amount = BigDecimal("99.99"),
+        holdTransactionId = 12345
       )
 
       val holdsCreatedAtUTC = timeConversionService.toUtcInstant(holdsCreatedAt)
@@ -163,6 +180,8 @@ class HoldsServiceTest {
         holdType = CreateHoldRequest.HoldType.WHF,
         holdLocation = "LEI",
         amount = BigDecimal("99.99").toPence(),
+        prisonerSubAccountId = prisonerSubaccountUUID,
+        prisonSubAccountId = prisonSubaccountUUID
       )
 
       val createHoldResponse = HoldResponse(
@@ -183,7 +202,10 @@ class HoldsServiceTest {
 
       val responseBytes = createHoldResponse.id.toString().toByteArray(StandardCharsets.UTF_8)
 
-      whenever(holdsApiClient.postHold(createHoldRequest)).thenThrow(
+      whenever(holdsApiClient.postHold(
+        request = eq(createHoldRequest),
+        idempotencyKey = any()
+      )).thenThrow(
         WebClientResponseException(
           409,
           "Conflict",
@@ -191,6 +213,16 @@ class HoldsServiceTest {
           responseBytes,
           StandardCharsets.UTF_8,
         ),
+      )
+
+      whenever(
+        accountResolver.resolveSubAccount(
+          prisonId = eq("LEI"),
+          offenderId = "",
+          accountCode = ,
+          transactionType = TODO(),
+          parentCache = TODO()
+        )
       )
 
       assertThatThrownBy { holdsService.createHold(syncCreateHoldRequest) }

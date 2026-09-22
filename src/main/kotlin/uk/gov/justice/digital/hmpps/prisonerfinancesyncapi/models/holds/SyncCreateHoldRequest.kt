@@ -102,4 +102,18 @@ data class SyncCreateHoldRequest(
   @field:Digits(integer = 19, fraction = 2)
   val amount: BigDecimal,
 
+  @field:Schema(
+    description = "The transaction id of the hold transaction.",
+    nullable = false,
+    required = true,
+  )
+  val holdTransactionId: Long,
+
+  @field:Schema(
+    description = "The transaction id of the hold release transaction.",
+    nullable = true,
+    required = false,
+  )
+  val releaseTransactionId: Long? = null
+
 )
