@@ -51,7 +51,7 @@ class AdvancesServiceTest {
   lateinit var advanceRepaymentMappingRepository: AdvanceRepaymentMappingRepository
 
   @Spy
-  lateinit var idempotencyService: GeneralLedgerIdempotencyService
+  lateinit var idempotencyService: IdempotencyService
 
   private lateinit var advancesService: AdvancesService
 
@@ -203,7 +203,7 @@ class AdvancesServiceTest {
       assertThat(capturedReq.createdBy).isEqualTo(syncRepaymentRequest.createdBy)
       assertThat(capturedReq.entrySequence).isEqualTo(syncRepaymentRequest.entrySequence)
 
-      val expectedIdempotencyKey = idempotencyService.genTransactionIdempotencyKey(
+      val expectedIdempotencyKey = idempotencyService.genGLTransactionIdempotencyKey(
         syncRepaymentRequest.transactionId,
         entrySequence = syncRepaymentRequest.entrySequence,
       )

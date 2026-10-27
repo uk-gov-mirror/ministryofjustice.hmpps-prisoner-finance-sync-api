@@ -25,7 +25,7 @@ class AdvancesService(
   @Autowired var advancesApiClient: AdvancesApiClient,
   @Autowired var timeConversionService: TimeConversionService,
   @Autowired var advancesMappingRepository: AdvancesMappingRepository,
-  @Autowired val idempotencyService: GeneralLedgerIdempotencyService,
+  @Autowired val idempotencyService: IdempotencyService,
   @Autowired val advanceRepaymentMappingRepository: AdvanceRepaymentMappingRepository,
 ) {
   // we do not expect any advance to have more than one entry
@@ -41,7 +41,7 @@ class AdvancesService(
       )
     }
 
-    val idempotencyKey = idempotencyService.genTransactionIdempotencyKey(
+    val idempotencyKey = idempotencyService.genGLTransactionIdempotencyKey(
       syncCreateAdvanceRecordRequest.legacyPaymentProfileId,
       advanceTransactionEntrySequence,
     )
@@ -80,7 +80,7 @@ class AdvancesService(
   }
 
   fun createAdvanceRepayment(advanceId: UUID, syncAdvanceRepayRequest: SyncCreateAdvanceRepayRequest): SyncAdvanceRepayResponse {
-    val generatedIdempotency = idempotencyService.genTransactionIdempotencyKey(
+    val generatedIdempotency = idempotencyService.genGLTransactionIdempotencyKey(
       transactionId = syncAdvanceRepayRequest.transactionId,
       entrySequence = syncAdvanceRepayRequest.entrySequence,
     )
